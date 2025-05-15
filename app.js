@@ -2,7 +2,7 @@ let tg = window.Telegram.WebApp;
 tg.expand();
 
 // 👇 ВСТАВЬ СЮДА свой actual Google Script URL:
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyuOSnQjjbKJGEy6EQkcXB2Li_I2tcFHs_P4O5YzJpruQRVEO9sh0BfdQDyRUd8nsM_Kg/exec"; // ЗАМЕНИТЕ НА ВАШ URL
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx0E40fC0rCsqa8mNo5TRLt15psJ1S9XB-9QeprHmtO0pmSVHqAFfSjnnvnFPQjPxZKzQ/exec"; // ЗАМЕНИТЕ НА ВАШ URL
 
 const events = [
   {
