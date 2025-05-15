@@ -4,7 +4,7 @@ let tg = window.Telegram.WebApp;
 tg.expand();
 
 // 👇 ВАШ АКТУАЛЬНЫЙ URL ДЛЯ GOOGLE SCRIPT (убедитесь, что он правильный и развернут)
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyJOoaLJEA8NykMEGmc8fJ45CuiGYeDAimSqddLUh2_GGUPod8otfrXK6t9XyffxZpmbg/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyJOoaLJEA8NykMEGmc8fJ45CuiGYeDAimSqddLUh2_GGUPod8otfrXK6t9XyffxZpmbg/exec"; // ЗАМЕНИТЕ НА ВАШ АКТУАЛЬНЫЙ URL
 
 const events = [
   {
@@ -33,7 +33,7 @@ const dateList = (() => {
   for (let i = 0; i < 7; i++) {
     const date = new Date(now);
     date.setDate(now.getDate() + i);
-    dates.push(date.toISOString().split("T")[0]);
+    dates.push(date.toISOString().split("T")[0]); // Формат YYYY-MM-DD
   }
   return dates;
 })();
@@ -42,7 +42,7 @@ let selectedEvent = null;
 let selectedSeats = [];
 let selectedDate = "";
 let selectedTime = "16:00"; // Значение по умолчанию для времени
-let bookedSeats = [];
+let bookedSeats = []; // Массив для хранения ID занятых мест
 
 const eventList = document.getElementById("eventList");
 const bookingSection = document.getElementById("bookingSection");
@@ -73,25 +73,23 @@ events.forEach(ev => {
 
 function selectEvent(id) {
   selectedEvent = events.find(e => e.id === id);
-  selectedSeats = [];
-  bookedSeats = [];
+  selectedSeats = []; 
+  bookedSeats = []; 
   eventTitle.textContent = selectedEvent.title + " | " + selectedEvent.place;
   bookingSection.classList.remove("hidden");
 
   dateSelect.innerHTML = "";
-  dateList.forEach(dateStr => { // Изменено имя переменной для ясности
+  dateList.forEach(dateStr => {
     const option = document.createElement("option");
     option.value = dateStr;
-    // Форматируем дату для отображения
     const displayDate = new Date(dateStr).toLocaleDateString('kk-KZ', { day: 'numeric', month: 'long', year: 'numeric' });
     option.textContent = displayDate;
     dateSelect.appendChild(option);
   });
-  selectedDate = dateList[0]; // Устанавливаем первую дату как выбранную по умолчанию
+  selectedDate = dateList[0]; 
   dateSelect.value = selectedDate;
 
-  // Устанавливаем время по умолчанию при выборе нового события
-  selectedTime = timeSelect.options[0].value; // Берем первое значение из <select>
+  selectedTime = timeSelect.options[0].value; 
   timeSelect.value = selectedTime;
 
   fetchBookedSeats();
@@ -99,25 +97,26 @@ function selectEvent(id) {
 
 dateSelect.onchange = () => {
   selectedDate = dateSelect.value;
-  selectedSeats = []; // Сбрасываем выбранные места при смене даты
+  selectedSeats = []; 
   fetchBookedSeats();
 };
 timeSelect.onchange = () => {
   selectedTime = timeSelect.value;
-  selectedSeats = []; // Сбрасываем выбранные места при смене времени
+  selectedSeats = []; 
   fetchBookedSeats();
 };
 
 async function fetchBookedSeats() {
   if (!selectedEvent || !selectedDate || !selectedTime) {
-    console.warn("fetchBookedSeats: Не выбрано событие, дата или время.");
-    drawSeatMap(); // Отрисовать пустую или дефолтную карту
+    console.warn("fetchBookedSeats: Не выбрано событие, дата или время. Карта мест не будет обновлена.");
+    bookedSeats = []; // Сбрасываем, если нет данных для запроса
+    drawSeatMap(); 
     return;
   }
 
   seatTable.innerHTML = '<tr><td colspan="11" class="p-4 text-center">Орындар жүктелуде...</td></tr>';
   
-  const urlParams = new URLSearchParams({ // Используем URLSearchParams для корректного кодирования
+  const urlParams = new URLSearchParams({
       action: "getBookedSeats",
       title: selectedEvent.title,
       date: selectedDate,
@@ -125,51 +124,49 @@ async function fetchBookedSeats() {
   });
   const requestUrl = `${GOOGLE_SCRIPT_URL}?${urlParams.toString()}`;
   
-  console.log("ЗАПРОС К GOOGLE SCRIPT (fetchBookedSeats):", requestUrl); // <-- ЛОГИРОВАНИЕ URL
+  console.log("ЗАПРОС К GOOGLE SCRIPT (fetchBookedSeats):", requestUrl);
 
   try {
     const response = await fetch(requestUrl);
-    const responseDataText = await response.text(); // Сначала получаем как текст для отладки
-    console.log("Ответ от Google Script (текст):", responseDataText);
+    const responseDataText = await response.text(); 
+    console.log("Ответ от Google Script (текст, fetchBookedSeats):", responseDataText);
 
     if (!response.ok) {
         let errorData;
-        try {
-            errorData = JSON.parse(responseDataText);
-        } catch (e) {
-            errorData = { error: "Fetch error, could not parse JSON from error response", details: responseDataText };
-        }
+        try { errorData = JSON.parse(responseDataText); } 
+        catch (e) { errorData = { error: "Fetch error (fetchBookedSeats), could not parse JSON from error response", details: responseDataText }; }
         console.error("Сервер қатесі (Google Script) при fetchBookedSeats:", response.status, errorData);
         alert(`Орындар туралы ақпарат алу кезінде қате: ${errorData.error || response.statusText}. Толығырақ консольда.`);
-        bookedSeats = [];
+        bookedSeats = []; // Считаем, что все свободно или произошла ошибка
     } else {
         try {
             const data = JSON.parse(responseDataText);
-            console.log("Ответ от Google Script (JSON parsed):", data);
-            if (data.success === false) { // Явная проверка на неуспех от скрипта
-                 console.error("Google Script вернул success:false:", data.error, data.details);
+            console.log("Ответ от Google Script (JSON parsed, fetchBookedSeats):", data);
+            if (data.success === false) { 
+                 console.error("Google Script вернул success:false (fetchBookedSeats):", data.error, data.details);
                  alert(`Орындарды алу кезінде сервер қатесі: ${data.error || 'Белгісіз қате'}.`);
                  bookedSeats = [];
             } else {
-                bookedSeats = data.booked || [];
+                bookedSeats = data.booked || []; // Ожидаем массив строк ['1-қатар 1-орын', ...]
             }
         } catch (e) {
-            console.error("Ошибка парсинга JSON от Google Script:", e, "Полученный текст:", responseDataText);
+            console.error("Ошибка парсинга JSON от Google Script (fetchBookedSeats):", e, "Полученный текст:", responseDataText);
             alert("Орындар туралы ақпарат алу кезінде жауап форматы қате.");
             bookedSeats = [];
         }
     }
   } catch (err) {
-    console.error("Орындарды алу кезінде желі немесе басқа қате:", err);
-    alert("Орындарды алу кезінде желі қатесі. Интернет байланысыңызды тексеріңіз.");
-    bookedSeats = [];
+    console.error("Орындарды алу кезінде желі немесе CORS қате (fetchBookedSeats):", err);
+    alert("Орындарды алу кезінде желі қатесі немесе CORS саясатымен блоктау. Консольды тексеріңіз.");
+    bookedSeats = []; // В случае ошибки считаем, что нет информации о занятых местах
   }
+  console.log("Обработанные bookedSeats в app.js (после fetchBookedSeats):", JSON.stringify(bookedSeats));
   drawSeatMap();
 }
 
-
 function drawSeatMap() {
   seatTable.innerHTML = "";
+  console.log("drawSeatMap вызвана. bookedSeats:", JSON.stringify(bookedSeats), "selectedSeats:", JSON.stringify(selectedSeats));
   for (let row = 1; row <= 10; row++) {
     const tr = document.createElement("tr");
     const rowLabel = document.createElement("td");
@@ -182,7 +179,6 @@ function drawSeatMap() {
       const td = document.createElement("td");
       td.textContent = col;
       td.dataset.seatId = seatId;
-
       let baseClasses = "p-2 border text-xs sm:text-sm text-center ";
 
       if (bookedSeats.includes(seatId)) {
@@ -191,7 +187,7 @@ function drawSeatMap() {
       } else {
         td.className = baseClasses + "cursor-pointer bg-gray-50 hover:bg-green-300";
         td.onclick = () => toggleSeat(td, seatId);
-        if (selectedSeats.includes(seatId)) { // Если место выбрано, выделяем его
+        if (selectedSeats.includes(seatId)) {
           td.classList.remove("bg-gray-50", "hover:bg-green-300");
           td.classList.add("bg-green-500", "text-white");
         }
@@ -213,87 +209,76 @@ function toggleSeat(td, seatId) {
     td.classList.remove("bg-gray-50", "hover:bg-green-300");
     td.classList.add("bg-green-500", "text-white");
   }
-  // console.log("Выбранные места:", selectedSeats); // Для отладки выбора мест
 }
 
 confirmBtn.onclick = async () => {
   const customerName = customerNameInput.value.trim();
   const customerPhone = customerPhoneInput.value.trim();
 
-  if (!selectedEvent) {
-    alert("Алдымен іс-шараны таңдаңыз.");
-    return;
-  }
-  if (selectedSeats.length === 0) {
-    alert("Кемінде бір орынды таңдаңыз.");
-    return;
-  }
-  if (!customerName) {
-    alert("Аты-жөніңізді енгізіңіз.");
-    customerNameInput.focus();
-    return;
-  }
-  if (!customerPhone) {
-    alert("Телефон нөміріңізді енгізіңіз.");
-    customerPhoneInput.focus();
+  if (!selectedEvent || selectedSeats.length === 0 || !customerName || !customerPhone) {
+    alert("Барлық өрістерді толтырыңыз және кемінде бір орынды таңдаңыз.");
+    if (!customerName) customerNameInput.focus();
+    else if (!customerPhone) customerPhoneInput.focus();
     return;
   }
 
   confirmBtn.disabled = true;
   confirmBtn.textContent = "Тексеру...";
 
+  let currentBookedSeatsCheck;
   try {
-    const checkUrlParams = new URLSearchParams({ // Используем URLSearchParams
+    const checkUrlParams = new URLSearchParams({
         action: "getBookedSeats",
         title: selectedEvent.title,
         date: selectedDate,
         time: selectedTime
     });
     const checkRequestUrl = `${GOOGLE_SCRIPT_URL}?${checkUrlParams.toString()}`;
+    console.log("ЗАПРОС К GOOGLE SCRIPT (confirmBtn check):", checkRequestUrl);
 
-    console.log("ЗАПРОС К GOOGLE SCRIPT (confirmBtn check):", checkRequestUrl); // <-- ЛОГИРОВАНИЕ URL
+    const responseCheck = await fetch(checkRequestUrl);
+    const responseDataTextCheck = await responseCheck.text();
+    console.log("Ответ от Google Script при проверке (текст, confirmBtn):", responseDataTextCheck);
 
-    const response = await fetch(checkRequestUrl);
-    const responseDataText = await response.text(); // Сначала получаем как текст
-    console.log("Ответ от Google Script при проверке (текст):", responseDataText);
-
-    if (!response.ok) {
+    if (!responseCheck.ok) {
         let errorDataCheck;
-        try { errorDataCheck = JSON.parse(responseDataText); }
-        catch (e) { errorDataCheck = { error: "Fetch error during confirm, could not parse JSON", details: responseDataText }; }
-        console.error("Сервер қатесі (Google Script) при проверке мест:", response.status, errorDataCheck);
-        alert(`Орындарды тексеру кезінде қате: ${errorDataCheck.error || response.statusText}.`);
+        try { errorDataCheck = JSON.parse(responseDataTextCheck); }
+        catch (e) { errorDataCheck = { error: "Fetch error during confirm, could not parse JSON", details: responseDataTextCheck }; }
+        console.error("Сервер қатесі (Google Script) при проверке мест (confirmBtn):", responseCheck.status, errorDataCheck);
+        alert(`Орындарды тексеру кезінде қате: ${errorDataCheck.error || responseCheck.statusText}.`);
         confirmBtn.disabled = false;
         confirmBtn.textContent = "📩 Брондау";
         return;
     }
     
-    let currentBookedSeats;
     try {
-        const data = JSON.parse(responseDataText);
-        if (data.success === false) {
-            console.error("Google Script вернул success:false при проверке:", data.error, data.details);
-            alert(`Орындарды тексеру кезінде сервер қатесі: ${data.error || 'Белгісіз қате'}.`);
+        const dataCheck = JSON.parse(responseDataTextCheck);
+        console.log("Ответ от Google Script при проверке (JSON parsed, confirmBtn):", dataCheck);
+        if (dataCheck.success === false) {
+            console.error("Google Script вернул success:false при проверке (confirmBtn):", dataCheck.error, dataCheck.details);
+            alert(`Орындарды тексеру кезінде сервер қатесі: ${dataCheck.error || 'Белгісіз қате'}.`);
             confirmBtn.disabled = false;
             confirmBtn.textContent = "📩 Брондау";
             return;
         }
-        currentBookedSeats = data.booked || [];
+        currentBookedSeatsCheck = dataCheck.booked || [];
     } catch (e) {
-        console.error("Ошибка парсинга JSON от Google Script при проверке:", e, "Полученный текст:", responseDataText);
+        console.error("Ошибка парсинга JSON от Google Script при проверке (confirmBtn):", e, "Полученный текст:", responseDataTextCheck);
         alert("Орындарды тексеру кезінде жауап форматы қате.");
         confirmBtn.disabled = false;
         confirmBtn.textContent = "📩 Брондау";
         return;
     }
 
-    const newlyBookedByOthers = selectedSeats.filter(seat => currentBookedSeats.includes(seat));
+    console.log("Места, выбранные пользователем (confirmBtn):", JSON.stringify(selectedSeats));
+    console.log("Занятые места с сервера при проверке (confirmBtn):", JSON.stringify(currentBookedSeatsCheck));
+
+    const newlyBookedByOthers = selectedSeats.filter(seat => currentBookedSeatsCheck.includes(seat));
 
     if (newlyBookedByOthers.length > 0) {
-      // Сообщение, которое вы видите на скриншоте, формируется здесь
-      alert(`Кешіріңіз, келесі орындар жаңа ғана брондалды: ${newlyBookedByOthers.join(', ')}. Тапсырыс жаңартылады, басқа орындарды таңдаңыз.`);
-      bookedSeats = currentBookedSeats;
-      selectedSeats = selectedSeats.filter(seat => !newlyBookedByOthers.includes(seat));
+      alert(`Кешіріңіз, келесі орындар ('${newlyBookedByOthers.join(', ')}') сіз таңдау жасап жатқанда брондалып кетті немесе қазір қолжетімсіз. Тапсырыс жаңартылады, басқа орындарды таңдаңыз.`);
+      bookedSeats = currentBookedSeatsCheck; // Обновляем глобальный bookedSeats
+      selectedSeats = selectedSeats.filter(seat => !newlyBookedByOthers.includes(seat)); // Убираем занятые из выбранных
       drawSeatMap();
       confirmBtn.disabled = false;
       confirmBtn.textContent = "📩 Брондау";
@@ -316,17 +301,18 @@ confirmBtn.onclick = async () => {
 
     console.log("Отправка данных в Telegram:", JSON.stringify(dataToSend));
     tg.sendData(JSON.stringify(dataToSend));
-    // tg.close(); // Можно закрыть WebApp после отправки, если нужно
+    // Не сбрасываем кнопку здесь, т.к. ожидаем закрытие WebApp или переход к оплате
+    // confirmBtn.disabled = false;
+    // confirmBtn.textContent = "📩 Брондау";
 
   } catch (err) {
-    console.error("Брондау кезінде қате (общий catch):", err);
+    console.error("Брондау кезінде қате (общий catch в confirmBtn):", err);
     alert("Брондау кезінде қате орын алды. Интернет байланысыңызды тексеріп, қайталап көріңіз.");
     confirmBtn.disabled = false;
     confirmBtn.textContent = "📩 Брондау";
   }
 };
 
-// Вызываем selectEvent для первого события в списке, если он есть, чтобы инициализировать интерфейс
 if (events.length > 0) {
   selectEvent(events[0].id);
 }
