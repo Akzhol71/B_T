@@ -4,7 +4,7 @@ let tg = window.Telegram.WebApp;
 tg.expand();
 
 // 👇 ВАШ АКТУАЛЬНЫЙ URL ДЛЯ GOOGLE SCRIPT (убедитесь, что он правильный и развернут)
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyJOoaLJEA8NykMEGmc8fJ45CuiGYeDAimSqddLUh2_GGUPod8otfrXK6t9XyffxZpmbg/exec"; // ЗАМЕНИТЕ НА ВАШ АКТУАЛЬНЫЙ URL
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx5y_mX_Zj9k5AgbBNue_3Ke_l4qtYCrq7gGGxhluZ46JAzEDCO4yDGfx9-NgeVlIcmjw/exec"; // ЗАМЕНИТЕ НА ВАШ АКТУАЛЬНЫЙ URL
 
 const events = [
   {
